@@ -95,17 +95,30 @@ class Application:
                 self.ui.show_error("Токен не может быть пустым")
                 continue
 
-            # Проверяем токен через whoami
+            # Запрашиваем org_id
+            org_id = self.ui.prompt_org_id()
+            
+            if not org_id:
+                self.ui.show_error("Organization ID не может быть пустым")
+                continue
+
+            # Проверяем, что org_id является числом
+            try:
+                org_id_int = int(org_id)
+            except ValueError:
+                self.ui.show_error("Organization ID должен быть числом")
+                continue
+
+            # Теперь проверяем токен через whoami
             try:
                 temp_client = YandexAPIClient(token)
                 whoami_data = temp_client.whoami()
                 
                 login = whoami_data.get("login", "неизвестно")
-                org_ids = whoami_data.get("orgIds", [])
                 scopes = whoami_data.get("scopes", [])
                 
                 # Показываем информацию о токене
-                self.ui.show_token_validation(login, org_ids)
+                self.ui.show_token_info(login)
                 
                 # Проверяем scope
                 is_valid, missing_scopes = temp_client.validate_scopes(scopes)
@@ -113,30 +126,8 @@ class Application:
                 
                 if not is_valid:
                     self.ui.show_warning("Токен не имеет необходимых прав доступа")
+                    temp_client.close()
                     continue
-
-                # Запрашиваем org_id
-                org_id = self.ui.prompt_org_id(org_ids if org_ids else None)
-                
-                if not org_id:
-                    self.ui.show_error("Organization ID не может быть пустым")
-                    continue
-
-                # Проверяем, что org_id является числом
-                try:
-                    org_id_int = int(org_id)
-                except ValueError:
-                    self.ui.show_error("Organization ID должен быть числом")
-                    continue
-
-                # Если org_ids известны, проверяем что выбранный org_id в списке
-                if org_ids and org_id_int not in org_ids:
-                    self.ui.show_warning(
-                        f"Organization ID {org_id_int} не найден в списке доступных организаций.\n"
-                        "Всё равно сохранить?"
-                    )
-                    if not self.ui.ask_continue():
-                        continue
 
                 # Сохраняем конфигурацию
                 self.config.save(token, org_id)
@@ -150,7 +141,7 @@ class Application:
 
             except YandexAPIError as e:
                 self.ui.show_error(f"Ошибка проверки токена: {e}")
-                self.ui.show_warning("Попробуйте ввести токен ещё раз")
+                self.ui.show_warning("Попробуйте ввести данные ещё раз")
                 continue
             except Exception as e:
                 self.ui.show_error(f"Непредвиденная ошибка: {e}")
@@ -175,10 +166,8 @@ class Application:
 
             # Обрабатываем URL
             self.process_url(url)
-
-            # Спрашиваем, продолжить ли
-            if not self.ui.ask_continue():
-                break
+            
+            # Автоматически продолжаем (возвращаемся на ввод URL)
 
         self.ui.show_goodbye()
 

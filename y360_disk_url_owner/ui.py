@@ -4,7 +4,6 @@
 """
 
 import sys
-from getpass import getpass
 from typing import Dict, Optional
 
 from rich.console import Console
@@ -82,58 +81,44 @@ class UI:
         """
         self.console.print()
         self.console.print("[yellow]Введите OAuth токен для доступа к Яндекс 360 API[/yellow]")
-        self.console.print("[dim]Токен не будет отображаться при вводе[/dim]")
         self.console.print()
         
-        token = getpass("Token: ")
+        token = Prompt.ask("Token")
         return token.strip()
 
-    def prompt_org_id(self, available_orgs: Optional[list] = None) -> str:
+    def prompt_org_id(self) -> str:
         """
         Запрашивает у пользователя ID организации.
-
-        Args:
-            available_orgs: Список доступных организаций (если известны)
 
         Returns:
             Введённый org_id
         """
         self.console.print()
-        if available_orgs:
-            self.console.print("[bold]Доступные организации:[/bold]")
-            for org_id in available_orgs:
-                self.console.print(f"  • {org_id}")
-            self.console.print()
-        
         self.console.print("[yellow]Введите ID организации (org_id)[/yellow]")
         org_id = Prompt.ask("Organization ID")
         return org_id.strip()
 
-    def show_token_validation(self, login: str, org_ids: list):
+    def show_token_info(self, login: str):
         """
-        Показывает результат проверки токена.
+        Показывает информацию о токене.
+        Теперь ничего не отображает при успешной проверке.
 
         Args:
-            login: Логин пользователя
-            org_ids: Список доступных организаций
+            login: Логин пользователя (не используется)
         """
-        self.console.print()
-        self.console.print(f"[green]✓[/green] Токен валиден")
-        self.console.print(f"  [cyan]Логин:[/cyan] {login}")
-        self.console.print(f"  [cyan]Доступные организации:[/cyan] {', '.join(map(str, org_ids))}")
-        self.console.print()
+        # Не отображаем ничего при успешной проверке
+        pass
 
     def show_scope_validation(self, is_valid: bool, missing_scopes: list):
         """
         Показывает результат проверки scope.
+        Отображает сообщение только при ошибке.
 
         Args:
             is_valid: True если все scope присутствуют
             missing_scopes: Список недостающих scope
         """
-        if is_valid:
-            self.console.print("[green]✓[/green] Все необходимые права доступа присутствуют")
-        else:
+        if not is_valid:
             self.console.print()
             self.console.print("[bold red]✗ Недостаточно прав доступа![/bold red]")
             self.console.print("[yellow]Отсутствуют следующие scope:[/yellow]")
@@ -141,8 +126,7 @@ class UI:
                 self.console.print(f"  • {scope}")
             self.console.print()
             self.console.print("[dim]Пожалуйста, получите токен с необходимыми правами[/dim]")
-            self.console.print("[dim]Подробнее: https://yandex.ru/dev/id/doc/ru/codes/screen-code[/dim]")
-        self.console.print()
+            self.console.print()
 
     def show_config_saved(self):
         """Показывает сообщение об успешном сохранении конфигурации."""
@@ -187,12 +171,12 @@ class UI:
         Args:
             message: Сообщение для отображения
         """
-        self.console.print(f"[yellow]⟳[/yellow] {message}...", end="")
+        self.console.print(f"[yellow]⟳[/yellow] {message}...")
 
     def clear_processing(self):
         """Очищает сообщение о процессе обработки."""
-        # Перемещаемся в начало строки и очищаем её
-        self.console.print("\r" + " " * 80 + "\r", end="")
+        # Ничего не делаем, сообщение остается на своей строке
+        pass
 
     def show_user_info(self, user_data: Dict):
         """
@@ -202,8 +186,6 @@ class UI:
             user_data: Словарь с данными пользователя из API
         """
         self.console.print()
-        self.console.print("[bold green]✓ Владелец найден![/bold green]")
-        self.console.print()
 
         # Создаём таблицу
         table = Table(show_header=False, box=None, padding=(0, 2))
@@ -212,29 +194,18 @@ class UI:
 
         # Добавляем данные
         table.add_row("UID", str(user_data.get("id", "—")))
+        table.add_row("Логин", user_data.get("nickname", "—"))
         table.add_row("Email", user_data.get("email", "—"))
         
         # ФИО
         name_data = user_data.get("name", {})
         first_name = name_data.get("first", "")
         last_name = name_data.get("last", "")
-        middle_name = name_data.get("middle", "")
         
         if first_name:
             table.add_row("Имя", first_name)
         if last_name:
             table.add_row("Фамилия", last_name)
-        if middle_name:
-            table.add_row("Отчество", middle_name)
-        
-        table.add_row("Логин", user_data.get("nickname", "—"))
-
-        # Дополнительная информация
-        if user_data.get("position"):
-            table.add_row("Должность", user_data.get("position"))
-        
-        if user_data.get("departmentId"):
-            table.add_row("ID подразделения", str(user_data.get("departmentId")))
 
         # Выводим таблицу в панели
         panel = Panel(table, border_style="green", padding=(1, 2))
@@ -274,14 +245,6 @@ class UI:
         self.console.print(f"[blue]ℹ[/blue]  {info_message}")
         self.console.print()
 
-    def ask_continue(self) -> bool:
-        """
-        Спрашивает, хочет ли пользователь продолжить.
-
-        Returns:
-            True если пользователь хочет продолжить
-        """
-        return Confirm.ask("[bold]Проверить другую ссылку?[/bold]", default=True)
 
     def show_goodbye(self):
         """Показывает прощальное сообщение."""
