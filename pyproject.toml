@@ -1,0 +1,23 @@
+[project]
+name = "y360-disk-url-owner"
+version = "0.1.0"
+description = "Определение владельца файла на Яндекс Диске по публичной ссылке через Яндекс 360 API"
+authors = [{name = "Anton Bugrin", email = "abugrin@yandex.ru"}]
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+dependencies = [
+    "requests>=2.31.0",
+    "rich>=13.7.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.scripts]
+y360-disk-owner = "y360_disk_url_owner.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["y360_disk_url_owner"]
